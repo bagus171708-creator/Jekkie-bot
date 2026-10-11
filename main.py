@@ -3,6 +3,7 @@ from discord.ext import commands
 import os
 from flask import Flask
 import threading
+import asyncio
 
 TOKEN = os.getenv("TOKEN")
 if not TOKEN or len(TOKEN) < 20:
@@ -16,6 +17,8 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 sumber_id, target_id, invite_id = None, None, None
 aktif_mirror, aktif_invite = True, True
 pesan_map, invites_cache = {}, {}
+voice_channel_id = None
+vc_client = None
 
 app = Flask(__name__)
 @app.route('/')
@@ -50,7 +53,7 @@ async def on_ready():
             await bot.tree.sync(guild=guild)
             invites_cache[guild.id] = await guild.invites()
         except: pass
-    print(f"✅️ONLINE {bot.user}")
+    print(f"✅️{bot.user} ONLINE")
 
 @bot.event
 async def on_member_join(member):
@@ -79,55 +82,98 @@ async def on_member_join(member):
 @bot.tree.command(name="setsumber")
 async def setsumber(interaction: discord.Interaction, channel: discord.TextChannel):
     global sumber_id
-    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied"), ephemeral=True)
+    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied","you have'nt acsess"), ephemeral=True)
     sumber_id=channel.id
     await interaction.response.send_message(embed=on("📌 Source Set", f"{channel.mention}"), ephemeral=True)
 
 @bot.tree.command(name="settarget")
 async def settarget(interaction: discord.Interaction, channel: discord.TextChannel):
     global target_id
-    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied"), ephemeral=True)
+    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied","you have'nt acsess"), ephemeral=True)
     target_id=channel.id
     await interaction.response.send_message(embed=on("📤 Target Set", f"{channel.mention}"), ephemeral=True)
 
 @bot.tree.command(name="setinvite")
 async def setinvite(interaction: discord.Interaction, channel: discord.TextChannel):
     global invite_id
-    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied"), ephemeral=True)
+    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied","you have'nt acsess"), ephemeral=True)
     invite_id=channel.id
     await interaction.response.send_message(embed=on("📝 Invite Log Set", f"{channel.mention}"), ephemeral=True)
 
 @bot.tree.command(name="start_mirror")
 async def start_mirror(interaction: discord.Interaction):
     global aktif_mirror
-    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied"), ephemeral=True)
+    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied","you have'nt acsess"), ephemeral=True)
     aktif_mirror=True
-    await interaction.response.send_message(embed=on("✅ Mirror ON", "Mirror diaktifkan"), ephemeral=True)
+    await interaction.response.send_message(embed=on("✅ Mirror ON", "Mirror active!!!"), ephemeral=True)
 
 @bot.tree.command(name="stop_mirror")
 async def stop_mirror(interaction: discord.Interaction):
     global aktif_mirror
-    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied"), ephemeral=True)
+    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied","you have'nt acsess"), ephemeral=True)
     aktif_mirror=False
     await interaction.response.send_message(embed=on("⏸️ Mirror OFF", "Mirror dimatikan"), ephemeral=True)
 
 @bot.tree.command(name="start_invite")
 async def start_invite(interaction: discord.Interaction):
     global aktif_invite
-    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied"), ephemeral=True)
+    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied","you have'nt acsess"), ephemeral=True)
     aktif_invite=True
     await interaction.response.send_message(embed=on("✅ Invite ON", "Invite log diaktifkan"), ephemeral=True)
+
+@bot.tree.command(name="setvoice", description="Set channel voice buat 24/7")
+async def setvoice(interaction: discord.Interaction, channel: discord.VoiceChannel):
+    global voice_channel_id
+    if not is_owner(interaction):
+        return await interaction.response.send_message(embed=off("❌ Denied","you have'nt acsess"), ephemeral=True)
+    voice_channel_id = channel.id
+    await interaction.response.send_message(embed=on("🔊 Voice Set", f"Voice 24/7 ready in {channel.mention}\nEnjoy in voice!"), ephemeral=True)
+
+@bot.tree.command(name="joinvoice", description="Join voice 24/7")
+async def joinvoice(interaction: discord.Interaction):
+    global vc_client, voice_channel_id
+    if not is_owner(interaction):
+        return await interaction.response.send_message(embed=off("❌ Denied","you have'nt acsess"), ephemeral=True)
+    if not voice_channel_id:
+        return await interaction.response.send_message(embed=off("❌ Error", "set voice dulss"), ephemeral=True)
+    
+    await interaction.response.defer(ephemeral=True)
+    try:
+        channel = bot.get_channel(voice_channel_id)
+        if not channel:
+            return await interaction.followup.send(embed=off("❌ Error", "Channel voice not found"), ephemeral=True)
+        
+        if vc_client and vc_client.is_connected():
+            await vc_client.move_to(channel)
+        else:
+            vc_client = await channel.connect(self_deaf=True)
+        
+        await interaction.followup.send(embed=on("✅ Joined", f"Bot join 24/7 in {channel.mention}"), ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(embed=off("❌ Error", str(e)), ephemeral=True)
+
+@bot.tree.command(name="leavevoice", description="Leave voice")
+async def leavevoice(interaction: discord.Interaction):
+    global vc_client
+    if not is_owner(interaction):
+        return await interaction.response.send_message(embed=off("❌ Denied","you have'nt acsess"), ephemeral=True)
+    if vc_client and vc_client.is_connected():
+        await vc_client.disconnect()
+        vc_client = None
+        await interaction.response.send_message(embed=on("👋 Left", "The bot left the voice channel"), ephemeral=True)
+    else:
+        await interaction.response.send_message(embed=off("❌ Error", "The bot not in the voice channel!"), ephemeral=True)
 
 @bot.tree.command(name="stop_invite")
 async def stop_invite(interaction: discord.Interaction):
     global aktif_invite
-    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied"), ephemeral=True)
+    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied","you have'nt acsess"), ephemeral=True)
     aktif_invite=False
     await interaction.response.send_message(embed=on("⏸️ Invite OFF", "Invite log dimatikan"), ephemeral=True)
 
 @bot.tree.command(name="status")
 async def status(interaction: discord.Interaction):
-    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied"), ephemeral=True)
+    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied","you have'nt acsess"), ephemeral=True)
     m="✅ ON" if aktif_mirror else "❌ OFF"
     i="✅ ON" if aktif_invite else "❌ OFF"
     s = f"<#{sumber_id}>" if sumber_id else "-"
@@ -151,6 +197,41 @@ async def on_message(message):
         if message.content or files:
             k=await tujuan.send(content=message.content or None, files=files or None, reference=ref)
             pesan_map[message.id]=k.id
+
+@bot.event
+async def on_voice_state_update(member, before, after):
+   
+    global vc_client
+    if member.id == bot.user.id and before.channel and not after.channel:
+        if voice_channel_id and aktif_mirror:
+            await asyncio.sleep(2)
+            try:
+                channel = bot.get_channel(voice_channel_id)
+                if channel:
+                    vc_client = await channel.connect(self_deaf=True)
+                    print(f"Auto-rejoin voice: {channel.name}")
+            except:
+                pass
+
+@bot.event
+async def on_ready():
+    print(f"Login sebagai {bot.user}")
+    try:
+        synced = await bot.tree.sync()
+        print(f"Sync {len(synced)} command")
+    except Exception as e:
+        print(e)
+    
+    global vc_client
+    if voice_channel_id:
+        await asyncio.sleep(3)
+        try:
+            channel = bot.get_channel(voice_channel_id)
+            if channel:
+                vc_client = await channel.connect(self_deaf=True)
+                print(f"Auto join voice 24/7: {channel.name}")
+        except Exception as e:
+            print(f"Gagal auto join voice: {e}")
 
 threading.Thread(target=run_web).start()
 bot.run(TOKEN)
