@@ -37,6 +37,9 @@ def on(t,d):
 def off(t,d):
     return embed(t,d,c=0xED4245)
 
+def gold(t,d):
+    return embed(t,d,c=0xFEE75C)
+
 def is_owner(i): return i.user.id in ALLOWED_IDS
 
 @bot.event
@@ -104,7 +107,7 @@ async def start_mirror(interaction: discord.Interaction):
 @bot.tree.command(name="stop_mirror")
 async def stop_mirror(interaction: discord.Interaction):
     global aktif_mirror
-    if not is_owner(interaction): return await interaction.response.send_message("❌ Denied", ephemeral=True)
+    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied"), ephemeral=True)
     aktif_mirror=False
     await interaction.response.send_message(embed=on("⏸️ Mirror OFF", "Mirror dimatikan"), ephemeral=True)
 
@@ -132,7 +135,7 @@ async def status(interaction: discord.Interaction):
     l = f"<#{invite_id}>" if invite_id else "-"
     
     desc = f"🔁 Mirror: {m}\n📩 Invite: {i}\n\n📌 Source: {s}\n📤 Target: {t}\n📝 Log: {l}"
-    await interaction.response.send_message(embed=embed("📊 Jekkie-bot Status", desc), ephemeral=True)
+    await interaction.response.send_message(embed=gold("📊 Jekkie-bot Status", desc), ephemeral=True)
 
 @bot.event
 async def on_message(message):
