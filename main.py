@@ -6,7 +6,7 @@ import threading
 
 TOKEN = os.getenv("TOKEN")
 if not TOKEN or len(TOKEN) < 20:
-    TOKEN = "TEMPEL_TOKEN_KAU_DISINI"
+    TOKEN = "TEMPEL_BOT"
 
 ALLOWED_IDS = [527857925981470730, 1079593002722406422, 972011985506033724]
 
@@ -31,6 +31,12 @@ def embed(t,d,c=0x2B2D31):
     e.set_footer(text="Jekkie-bot")
     return e
 
+def on(t,d):
+    return embed(t,d,c=0x57F287)
+
+def off(t,d):
+    return embed(t,d,c=0xED4245)
+
 def is_owner(i): return i.user.id in ALLOWED_IDS
 
 @bot.event
@@ -41,7 +47,7 @@ async def on_ready():
             await bot.tree.sync(guild=guild)
             invites_cache[guild.id] = await guild.invites()
         except: pass
-    print(f"ONLINE {bot.user}")
+    print(f"✅️ONLINE {bot.user}")
 
 @bot.event
 async def on_member_join(member):
@@ -70,55 +76,55 @@ async def on_member_join(member):
 @bot.tree.command(name="setsumber")
 async def setsumber(interaction: discord.Interaction, channel: discord.TextChannel):
     global sumber_id
-    if not is_owner(interaction): return await interaction.response.send_message("❌ Denied", ephemeral=True)
+    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied"), ephemeral=True)
     sumber_id=channel.id
-    await interaction.response.send_message(embed=embed("📌 Source Set", f"{channel.mention}"), ephemeral=True)
+    await interaction.response.send_message(embed=on("📌 Source Set", f"{channel.mention}"), ephemeral=True)
 
 @bot.tree.command(name="settarget")
 async def settarget(interaction: discord.Interaction, channel: discord.TextChannel):
     global target_id
-    if not is_owner(interaction): return await interaction.response.send_message("❌ Denied", ephemeral=True)
+    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied"), ephemeral=True)
     target_id=channel.id
-    await interaction.response.send_message(embed=embed("📤 Target Set", f"{channel.mention}"), ephemeral=True)
+    await interaction.response.send_message(embed=on("📤 Target Set", f"{channel.mention}"), ephemeral=True)
 
 @bot.tree.command(name="setinvite")
 async def setinvite(interaction: discord.Interaction, channel: discord.TextChannel):
     global invite_id
-    if not is_owner(interaction): return await interaction.response.send_message("❌ Denied", ephemeral=True)
+    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied"), ephemeral=True)
     invite_id=channel.id
-    await interaction.response.send_message(embed=embed("📝 Invite Log Set", f"{channel.mention}"), ephemeral=True)
+    await interaction.response.send_message(embed=on("📝 Invite Log Set", f"{channel.mention}"), ephemeral=True)
 
 @bot.tree.command(name="start_mirror")
 async def start_mirror(interaction: discord.Interaction):
     global aktif_mirror
-    if not is_owner(interaction): return await interaction.response.send_message("❌ Denied", ephemeral=True)
+    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied"), ephemeral=True)
     aktif_mirror=True
-    await interaction.response.send_message(embed=embed("✅ Mirror ON", "Mirror diaktifkan"), ephemeral=True)
+    await interaction.response.send_message(embed=on("✅ Mirror ON", "Mirror diaktifkan"), ephemeral=True)
 
 @bot.tree.command(name="stop_mirror")
 async def stop_mirror(interaction: discord.Interaction):
     global aktif_mirror
     if not is_owner(interaction): return await interaction.response.send_message("❌ Denied", ephemeral=True)
     aktif_mirror=False
-    await interaction.response.send_message(embed=embed("⏸️ Mirror OFF", "Mirror dimatikan"), ephemeral=True)
+    await interaction.response.send_message(embed=on("⏸️ Mirror OFF", "Mirror dimatikan"), ephemeral=True)
 
 @bot.tree.command(name="start_invite")
 async def start_invite(interaction: discord.Interaction):
     global aktif_invite
-    if not is_owner(interaction): return await interaction.response.send_message("❌ Denied", ephemeral=True)
+    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied"), ephemeral=True)
     aktif_invite=True
-    await interaction.response.send_message(embed=embed("✅ Invite ON", "Invite log diaktifkan"), ephemeral=True)
+    await interaction.response.send_message(embed=on("✅ Invite ON", "Invite log diaktifkan"), ephemeral=True)
 
 @bot.tree.command(name="stop_invite")
 async def stop_invite(interaction: discord.Interaction):
     global aktif_invite
-    if not is_owner(interaction): return await interaction.response.send_message("❌ Denied", ephemeral=True)
+    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied"), ephemeral=True)
     aktif_invite=False
-    await interaction.response.send_message(embed=embed("⏸️ Invite OFF", "Invite log dimatikan"), ephemeral=True)
+    await interaction.response.send_message(embed=on("⏸️ Invite OFF", "Invite log dimatikan"), ephemeral=True)
 
 @bot.tree.command(name="status")
 async def status(interaction: discord.Interaction):
-    if not is_owner(interaction): return await interaction.response.send_message("❌ Denied", ephemeral=True)
+    if not is_owner(interaction): return await interaction.response.send_message(embed=off("❌ Denied"), ephemeral=True)
     m="✅ ON" if aktif_mirror else "❌ OFF"
     i="✅ ON" if aktif_invite else "❌ OFF"
     s = f"<#{sumber_id}>" if sumber_id else "-"
